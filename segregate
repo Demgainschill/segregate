@@ -12,29 +12,53 @@ usage(){
 EOF
 }
 
+fileExtensionStripper(){
+	line="$1"
+	if [[ ! -n $( ls -ld $dir/Miscellaneous 2>/dev/null) ]]; then
+		mkdir -p $dir/Miscellaneous
+	fi
+			
+	while read -r line || [[ -n $line ]]; do
+		if [[ -n "$line" ]]; then
+			file=$(echo $line | rev | cut -d '/' -f 1 | rev | grep -Eiv '\.' ) 
+			extFile=$(echo $line | rev | cut -d '/' -f 1 | rev | grep -Ei '\.')
+		    #   	echo $extFile | sed -r "/^$/d" | grep -Eiv '^\.' 
+		 echo "$extFile" | sed '/^$/d' | grep -Eiv '^\.' | grep -Ei '\.[a-z]{1,20}$' | while read -r file; do
+		       
+  		ext="${file##*.}"
+  		upper_ext="${ext^^}" 
+  		base="${file%.*}"
+  		mkdir -p "$dir/$upper_ext" 2>/dev/null
+  		mv "$dir/$file" "$dir/$upper_ext/" 2>/dev/null
+		done
+
+		echo $file | sed -r "/^$/d" | sed -r "s|.*|$dir/&|" | xargs -n 1 -I {} mv ./{} $dir/Miscellaneous/ 2>/dev/null
+		fi | sed -r '/^$/d' 
+	done <  "$line"
+        
+}
+
 segregator(){
 	dir="$1"
 	touch "$dir"/.dirfile
 	ls -d $dir/*/ > "$dir"/.dirfile
-	# moved dir to .dirfile
 	find "$dir" -maxdepth 1 -type f -nowarn > "$dir"/.allfiles
-	# moved files to .allfiles
-
+	while read -r line && [[ -n $line ]]; do
+		fileExtensionStripper "$line"
+	done < $dir/.allfiles
+	
+	
 }
 
-override(){
-}
+
 while getopts ":hd:o" OPTS; do
 	case "$OPTS" in
+		o) 
+			override="y"
+			;;
 		d)
+			dirPresent="y"
 			dir=${OPTARG}
-			if [[ -d $dir ]]; then 
-				echo "Performing Segregation in directory $dir"
-				segregator $dir
-			else
-				echo "Is not a directory"
-				exit 1
-			fi
 			;;
 		h)
 			usage
@@ -50,6 +74,17 @@ while getopts ":hd:o" OPTS; do
 	esac
 done
 
+if [[ $override == "y" ]] && [[ $dirPresent == "y" ]]; then 
+				if [[ -d $dir ]]; then 
+				echo "Performing Segregation in directory $dir"
+				segregator $dir
+			else
+				echo "Is not a directory"
+				exit 1
+			fi
+			
+echo "overriding warning and options"
+fi
 
 if [[ ! -n $1 ]]; then
 	usage
@@ -62,3 +97,4 @@ if [[ $# -ge 1 ]]; then
 	exit 1
 	usage
 fi
+
