@@ -1,0 +1,11 @@
+plan 
+
+find all directories create a list
+
+find all files create a list 
+
+extract extensions of the file to see if the directory with that name exists
+	if it does move it into that directory
+	
+	if not then create a directory with miscellaneous and move the files in miscellaneous
+
